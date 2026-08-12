@@ -1,42 +1,9 @@
 import { google, Auth } from 'googleapis'
-import { Firestore } from '@google-cloud/firestore'
 import { randomBytes } from 'crypto'
-import { join } from 'path'
-import { fileURLToPath } from 'url'
-import { existsSync } from 'fs'
 import dotenv from 'dotenv'
-
+import { Db } from '../firebase/firebase'
 dotenv.config()
-
-let db: Firestore | null = null
-
-const serverDir =
-  typeof __dirname !== 'undefined' ? __dirname : join(fileURLToPath(import.meta.url), '..')
-
-const keyFilename =
-  process.env.GOOGLE_KEY_FILENAME || join(serverDir, 'serviceAccount.json')
-
-const hasServiceAccount = existsSync(keyFilename)
-
-if (!hasServiceAccount) {
-  console.warn(
-    `[CalendarAuth] No service account found at "${keyFilename}". Firestore token storage disabled.`
-  )
-} else {
-  try {
-    db = new Firestore({
-      ignoreUndefinedProperties: true,
-      projectId: process.env.GOOGLE_PROJECT_ID || 'nth-highlander-482810-m2',
-      keyFilename,
-      databaseId: process.env.GOOGLE_DATABASE_ID || 'communication'
-    })
-    // Suppress internal gRPC/stream errors to prevent unhandled rejections
-    ;(db as any)._settings?.promise?.catch?.(() => {})
-  } catch (err) {
-    console.warn('[CalendarAuth] Firestore initialization warning:', err)
-    db = null
-  }
-}
+let db = Db.getInstance().firestore
 
 const CALENDAR_SCOPE = 'https://www.googleapis.com/auth/calendar'
 

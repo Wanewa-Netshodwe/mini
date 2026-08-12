@@ -1,5 +1,5 @@
 import { google, calendar_v3 } from 'googleapis'
-import { CalendarAuthInstance } from '../auth/calendarAuth'
+import { CalendarAuthInstance } from '../auth/calendarAuth.js'
 
 export class GoogleCalendarService {
   private static instance: GoogleCalendarService | null = null
