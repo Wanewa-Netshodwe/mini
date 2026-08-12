@@ -1,4 +1,4 @@
-import { Session, Step, Task } from '../types.Session'
+import { Session, Step, Task } from '../types/types.Session'
 // used by the orchestrator to build the payload for a handler call and add context from previous steps
 export const buildPayload = (session: Session, step: Step): Record<string, unknown> => {
   const task = session.current_task
@@ -32,4 +32,11 @@ export const platformDataUsedEarlier = (task: Task, beforeStepNumber: number): b
       s.step_number < beforeStepNumber &&
       s.status === 'completed'
   )
+}
+//checks if an approval has been passed for the task before the given step number
+export const approvalPassedBefore = (task: Task, beforeStepNumber: number): boolean => {
+  const gate = task.steps.find(
+    (s) => s.handler === 'approval_gate' && s.step_number < beforeStepNumber
+  )
+  return !!gate && gate.status === 'completed' && gate.verdict === 'pass'
 }
