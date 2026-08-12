@@ -1,0 +1,8 @@
+export { calendarToolDesc } from './description.Calendar.js'
+export { googleCalendarQueryDesc } from './description.GoogleCalendar.js'
+export { shellDesc } from './description.Shell.js'
+export { fileSystemToolDesc } from './description.FileSystem.js'
+export { microsoftWordDesc } from './description.MicrosoftWord.js'
+export { emailSubAgentDesc } from './description.EmailSubAgent.js'
+export { whatsappSubAgentDes } from './description.WhatsappSubAgent.js'
+export { recruitmentPlatformSubAgentDesc } from './description.RecruitmentPlatform.js'
