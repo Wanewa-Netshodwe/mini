@@ -99,3 +99,5 @@ async function runHarness(session: Session, callbacks?: HarnessCallbacks): Promi
 
   return session
 }
+
+export { runHarness }
