@@ -1,5 +1,5 @@
 import { Session, Step, Task } from '../../harness/types/types.Session.js'
-import { PlannerSession, PlannerStep, PlannerTask } from '../../types/type.runner.js'
+import { PlannerSession, PlannerStep, PlannerTask } from '../types/type.runner.js'
 
 const buildToolCatalogText = async (): Promise<string> => {
   const {
