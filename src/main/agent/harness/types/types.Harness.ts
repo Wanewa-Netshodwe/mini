@@ -1,3 +1,5 @@
+import { HandlerResult } from "./types.Orchestration"
+
 export interface HarnessCallbacks {
   onStepStart?: (info: {
     session_id: string
@@ -22,3 +24,5 @@ export interface HarnessCallbacks {
     failure_reason?: string | null
   }) => void
 }
+
+export type HandlerFunction = (payload: Record<string, unknown>) => Promise<HandlerResult>
