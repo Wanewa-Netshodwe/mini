@@ -24,11 +24,11 @@ import {
 } from './utils/agent.utils'
 const model = LLM.getInstance()
 
-export async function runAgent(
+const runAgent = async (
   prompt: string,
   sessionId?: string,
   onProgress?: AgentProgressCallback
-): Promise<RunAgentResult> {
+): Promise<RunAgentResult> => {
   let existingSession = sessionId ? activeSessions.get(sessionId) : undefined
 
   const callbacks = cbs(onProgress)
@@ -198,3 +198,4 @@ export async function runAgent(
 
   return { text: summary, sessionId: final.session_id, session: final }
 }
+export { runAgent }

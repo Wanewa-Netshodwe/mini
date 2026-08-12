@@ -3,8 +3,6 @@ import { Session, Task } from '../harness/types/types.Session'
 import fs from 'fs/promises'
 import { ChatMessage, LLM } from '../LLM/llm'
 import { PlannerSession, PlannerTask } from '../runner/types/type.runner'
-import { HarnessCallbacks } from '../harness/types/types.Harness'
-import { HANDLER_ICONS } from '../callbacks/callbacks'
 
 const activeSessions = new Map<string, Session>()
 const SESSIONS_DIR = join(process.cwd(), 'sessions')
