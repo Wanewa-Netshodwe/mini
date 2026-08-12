@@ -1,4 +1,4 @@
-import { ToolDescription as Tool } from './BaseTool.js'
+import { ToolDescription as Tool } from './baseTool.js'
 
 const whatsappSubAgentDes = new Tool(
   'whatsapp_sub_agent',

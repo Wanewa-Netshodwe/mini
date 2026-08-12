@@ -1,4 +1,4 @@
-import { ToolDescription as Tool } from "./BaseTool.js";
+import { ToolDescription as Tool } from "./baseTool.js";
 
 const shellDesc = new Tool(
   "shell",

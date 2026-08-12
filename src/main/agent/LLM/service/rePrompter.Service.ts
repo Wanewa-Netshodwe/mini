@@ -2,7 +2,7 @@ import { ReprompterInput, ReprompterOutput } from '../../types/type.reprompter'
 import { ChatMessage, LLM } from '../llm'
 import { Reprompter } from '../../prompts/reprompter'
 
-export async function runReprompter(payload: ReprompterInput): Promise<ReprompterOutput> {
+export const runReprompter = async (payload: ReprompterInput): Promise<ReprompterOutput> => {
   const prevAttempt = (payload.previous_attempt ?? {}) as Record<string, unknown>
   const failureReason = String(payload.failure_reason ?? '')
   const taskId = payload.task_id ?? 'task'

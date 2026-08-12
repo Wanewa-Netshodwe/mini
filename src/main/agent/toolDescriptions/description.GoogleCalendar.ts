@@ -1,4 +1,4 @@
-import { ToolDescription as Tool } from "./BaseTool.js";
+import { ToolDescription as Tool } from "./baseTool.js";
 
 const googleCalendarQueryDesc = new Tool(
   "google_calendar_query",
