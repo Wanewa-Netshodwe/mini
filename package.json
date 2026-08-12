@@ -23,7 +23,9 @@
   "dependencies": {
     "@electron-toolkit/preload": "^3.0.2",
     "@electron-toolkit/utils": "^4.0.0",
+    "@google-cloud/firestore": "^9.0.0",
     "@reduxjs/toolkit": "^2.12.0",
+    "googleapis": "^174.0.1",
     "lucide-react": "^1.31.0",
     "react-redux": "^9.3.0",
     "react-router-dom": "^7.18.2",
@@ -89,5 +91,12 @@
       ],
       "icon": "build/icon.png"
     }
+  },
+  "allowScripts": {
+    "electron@39.8.10": true,
+    "electron-winstaller@5.4.0": true,
+    "esbuild@0.25.12": true,
+    "esbuild@0.28.2": true,
+    "protobufjs@7.6.5": true
   }
 }
