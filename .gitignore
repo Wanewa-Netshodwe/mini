@@ -6,3 +6,4 @@ out
 *.log*
 **/serviceAccount*.json
 .env
+sessions
