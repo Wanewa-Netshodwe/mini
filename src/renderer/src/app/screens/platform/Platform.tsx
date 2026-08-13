@@ -261,11 +261,10 @@ export const Platform = () => {
                 )}
                 {error && (
                   <div
-
-                    className="flex items-start gap-2 m-4 p-3 text-[11px] text-red-400/80"
+                    className="flex items-start gap-2 m-4 p-3 rounded-md text-[11px] text-red-400/80"
                     style={{
-                     
-                      paddingLeft: '6px'
+                      background: 'rgba(239,68,68,0.07)',
+                      border: '1px solid rgba(239,68,68,0.15)'
                     }}
                   >
                     <AlertCircle size={13} className="mt-0.5 shrink-0" />

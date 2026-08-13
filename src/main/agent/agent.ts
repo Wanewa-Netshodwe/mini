@@ -22,7 +22,7 @@ import {
   recordTurn,
   saveSessionToFile
 } from './utils/agent.utils'
-const model = LLM.getInstance(false)
+const model = LLM.getInstance()
 
 const runAgent = async (
   prompt: string,
@@ -30,18 +30,7 @@ const runAgent = async (
   onProgress?: AgentProgressCallback
 ): Promise<RunAgentResult> => {
   let existingSession = sessionId ? activeSessions.get(sessionId) : undefined
-  const RANDOM_WORKING_MESSAGES = [
-    'Deciding...',
-    'Analyzing...',
-    'Thinking...',
-    'Processing...',
-    'working on it...',
-    'Formulating a response...',
-    'Generating ideas...',
-    'Considering...',
-    'Calculating...',
-    'Synthesizing...'
-  ]
+
   const callbacks = cbs(onProgress)
   // 1. If existing session is waiting for user reply
   if (
@@ -63,9 +52,7 @@ const runAgent = async (
   // Step 1 — classify
   const intent = await classifyIntent(prompt, model)
   if (intent === 'chat') {
-    const randomMessage =
-      RANDOM_WORKING_MESSAGES[Math.floor(Math.random() * RANDOM_WORKING_MESSAGES.length)]
-    onProgress?.({ type: 'log', message: randomMessage })
+    onProgress?.({ type: 'log', message: 'Replying conversationally.' })
     const text = await conversationalReply(prompt, model, existingSession)
     let sessionToKeep: Session
     if (!existingSession) {
@@ -102,9 +89,7 @@ const runAgent = async (
     return { text, sessionId: sessionToKeep.session_id, session: sessionToKeep }
   }
 
-  const randomMessage2 =
-    RANDOM_WORKING_MESSAGES[Math.floor(Math.random() * RANDOM_WORKING_MESSAGES.length)]
-  onProgress?.({ type: 'log', message: randomMessage2 })
+  onProgress?.({ type: 'log', message: 'Task detected — building a plan…' })
 
   const catalogText = await buildToolCatalogText()
   const planner = new TaskPlanner()
@@ -140,10 +125,7 @@ const runAgent = async (
     { role: 'user', content: userContent }
   ]
 
-  const randomMessage =
-    RANDOM_WORKING_MESSAGES[Math.floor(Math.random() * RANDOM_WORKING_MESSAGES.length)]
-  onProgress?.({ type: 'log', message: randomMessage })
-
+  onProgress?.({ type: 'log', message: 'Calling planner…' })
   const res = await model.prompt(messages)
 
   const parsed = extractJSON(res.text)
