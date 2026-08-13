@@ -50,23 +50,55 @@ const resolveValuePlaceholders = (
   outputsByTask: Record<string, Record<string, unknown>>,
   csv = false
 ): unknown => {
+  /** Walk a dotted + bracketed JSON path like `results[0].email` or
+   *  `results[0].personal_details.contact.email` through the output object. */
+  const resolvePath = (root: unknown, pathStr: string): unknown => {
+    let current: unknown = root
+    const segments = pathStr
+      .replace(/\[(\d+)\]/g, '.$1')
+      .split('.')
+      .filter((s) => s !== '')
+    for (const seg of segments) {
+      if (current == null) return undefined
+      if (/^\d+$/.test(seg) && Array.isArray(current)) {
+        current = current[Number(seg)]
+      } else if (typeof current === 'object') {
+        current = (current as Record<string, unknown>)[seg]
+      } else {
+        return undefined
+      }
+    }
+    return current
+  }
+
+  const renderResolved = (v: unknown): string => {
+    if (typeof v === 'string') return v
+    if (Array.isArray(v) && v.every((item) => typeof item === 'string')) return v.join('\n')
+    if (csv && Array.isArray(v)) return toCsv(v)
+    return JSON.stringify(v)
+  }
+
   if (typeof value === 'string') {
     return value.replace(
-      /\{\{\s*([Tt][A-Za-z0-9_-]+)\s*\.\s*output\s*\.\s*([A-Za-z0-9_]+)\s*\}\}/g,
-      (match, taskId, field) => {
+      /\{\{\s*([Tt][A-Za-z0-9_-]+)\s*\.\s*output\s*(?:\.?\s*([^\s{}]+))?\s*\}\}/g,
+      (match, taskId, rawField) => {
         const out = outputsByTask[taskId]
         if (!out) return match
-        if (field in out) {
-          const v = out[field]
-          if (typeof v === 'string') return v
-          if (Array.isArray(v) && v.every((item) => typeof item === 'string')) {
-            return v.join('\n')
-          }
-          if (csv && Array.isArray(v)) {
-            return toCsv(v)
-          }
-          return JSON.stringify(v)
+        const field = (rawField ?? '').trim()
+
+        // Fast path: a plain `field` name directly on the output object.
+        if (field && /^[A-Za-z0-9_]+$/.test(field) && field in out) {
+          return renderResolved(out[field])
         }
+
+        // Dotted / indexed path (e.g. results[0].email). Resolve generically
+        // instead of leaving a literal placeholder for the consuming tool.
+        if (field && !/^[A-Za-z0-9_]+$/.test(field)) {
+          const v = resolvePath(out, field)
+          if (v === undefined) return match
+          return renderResolved(v)
+        }
+
         // Fallback: planners commonly write {{task.output.candidate_details}},
         // {{task.output.details}}, {{task.output.candidate_info}}, etc. Render the
         // record set we actually have (results) as readable text so the request
@@ -97,6 +129,36 @@ const resolveValuePlaceholders = (
             if (typeof record.content === 'string') return record.content
             if (typeof record.output === 'string') return record.output
             if (typeof record.text === 'string') return record.text
+          }
+        }
+        // Fallback: {{task.output.field}} when the field is actually nested under
+        // the first search result (planners reference lookup outputs top-level
+        // even though tools nest records under `results`). Also maps the common
+        // "applied role" phrasing to the tool's appliedJobTitle field.
+        if (field) {
+          const results = out.results
+          if (Array.isArray(results) && results.length > 0) {
+            const first = results[0]
+            if (first && typeof first === 'object' && !Array.isArray(first)) {
+              for (const exact of [field, field.toLowerCase()]) {
+                if (exact in (first as Record<string, unknown>)) {
+                  const v = resolvePath(out, `results[0].${exact}`)
+                  if (v !== undefined) return renderResolved(v)
+                }
+              }
+              const aliasOf: Record<string, string> = {
+                role: 'appliedJobTitle',
+                appliedrole: 'appliedJobTitle',
+                jobtitle: 'appliedJobTitle',
+                application: 'applications',
+                appliedjob: 'applications'
+              }
+              const target = aliasOf[field.toLowerCase()]
+              if (target && target in (first as Record<string, unknown>)) {
+                const v = resolvePath(out, `results[0].${target}`)
+                if (v !== undefined) return renderResolved(v)
+              }
+            }
           }
         }
         return match

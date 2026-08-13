@@ -24,8 +24,8 @@ You receive:
 - conversation_context: Optional prior conversation context.
 - current_datetime: Current date/time in ISO 8601 format.
 
-
 ## PLANNING RULES
+
 ### 1. Analyze the User Prompt
 
 Extract internally:
@@ -87,7 +87,7 @@ If the plan uses \`calendar\` or \`google_calendar_query\` at all, the plan MUST
 - The calendar read/write task must list the connection-status task's \`task_id\` in its \`depends_on\`.
 - The plan must NOT assume the connection exists. If the status step later reports \`connected: false\`, execution stops (the orchestrator parks the session in \`needs_input\`) and the user is asked to open the authorization URL from \`google_calendar_connection\` operation \`connect\`. Do not schedule against an unconnected calendar and do not fabricate a connection.
 - Only when \`connected: true\` is confirmed may \`calendar\` / \`google_calendar_query\` steps run.
-- The \`calendar\` step's \`action\` is required and must be exactly \`"create"\`, \`"reschedule"\`, or \`"cancel"\`.
+- The \`calendar\` step's \`action\` is required and must be one of \`"create"\`, \`"reschedule"\`, \`"cancel"\`, or \`"generate_link"\`. To attach a Google Meet link to an existing interview event, find its \`eventId\` via \`google_calendar_query\` (operation \`list_events\`) and then call \`calendar\` with \`action: "generate_link"\` and that \`eventId\` — the API returns the link as \`meetingLink\`; do NOT ask the user for a link. For brand-new remote events set \`isRemote: true\` (or \`generateMeetingLink: true\`) so the Meet link is auto-generated and returned.
 
 ### 3B. PLATFORM HIGH-IMPACT ACTION APPROVAL (mandatory for deletes and reassigns)
 
@@ -432,6 +432,8 @@ Return ONLY one valid JSON session object.
 - Do not return explanations.
 - Do not return tool execution results.
 - Do not include text before or after the JSON object.
+    
+    
     
     `
 }

@@ -1,6 +1,8 @@
 import { google, calendar_v3 } from 'googleapis'
 import { CalendarAuthInstance } from '../auth/calendarAuth.js'
 
+type SendUpdates = 'all' | 'externalOnly' | 'none'
+
 export class GoogleCalendarService {
   private static instance: GoogleCalendarService | null = null
 
@@ -40,6 +42,7 @@ export class GoogleCalendarService {
     }
   ) {
     const calendar = await this.getCalendarClient(userId)
+
     const { data } = await calendar.events.list({
       calendarId: options?.calendarId || 'primary',
       timeMin: options?.timeMin,
@@ -48,32 +51,40 @@ export class GoogleCalendarService {
       orderBy: 'startTime',
       maxResults: options?.maxResults || 100
     })
+
     return { items: data.items ?? [] }
   }
 
   public async getEvent(userId: string, eventId: string, calendarId: string = 'primary') {
     const calendar = await this.getCalendarClient(userId)
+
     const { data } = await calendar.events.get({
       calendarId,
       eventId
     })
+
     return data
   }
 
   public async createEvent(
     userId: string,
     event: calendar_v3.Schema$Event,
-    calendarId: string = 'primary'
+    calendarId: string = 'primary',
+    sendUpdates: SendUpdates = 'all'
   ) {
     if (!event?.summary) {
       throw new Error('Event summary is required')
     }
+
     const calendar = await this.getCalendarClient(userId)
+
     const { data } = await calendar.events.insert({
       calendarId,
       conferenceDataVersion: 1,
+      sendUpdates,
       requestBody: event
     })
+
     return data
   }
 
@@ -81,14 +92,18 @@ export class GoogleCalendarService {
     userId: string,
     eventId: string,
     event: calendar_v3.Schema$Event,
-    calendarId: string = 'primary'
+    calendarId: string = 'primary',
+    sendUpdates: SendUpdates = 'all'
   ) {
     const calendar = await this.getCalendarClient(userId)
+
     const { data } = await calendar.events.update({
       calendarId,
       eventId,
+      sendUpdates,
       requestBody: event
     })
+
     return data
   }
 
@@ -96,23 +111,36 @@ export class GoogleCalendarService {
     userId: string,
     eventId: string,
     event: calendar_v3.Schema$Event,
-    calendarId: string = 'primary'
+    calendarId: string = 'primary',
+    sendUpdates: SendUpdates = 'all'
   ) {
     const calendar = await this.getCalendarClient(userId)
+
     const { data } = await calendar.events.patch({
       calendarId,
       eventId,
+      conferenceDataVersion: 1,
+      sendUpdates,
       requestBody: event
     })
+
     return data
   }
 
-  public async deleteEvent(userId: string, eventId: string, calendarId: string = 'primary') {
+  public async deleteEvent(
+    userId: string,
+    eventId: string,
+    calendarId: string = 'primary',
+    sendUpdates: SendUpdates = 'all'
+  ) {
     const calendar = await this.getCalendarClient(userId)
+
     await calendar.events.delete({
       calendarId,
-      eventId
+      eventId,
+      sendUpdates
     })
+
     return { deleted: true, eventId }
   }
 }

@@ -7,7 +7,7 @@ export interface CalendarToolArguments {
   step_number?: number
   tool?: string
   userId?: string
-  action?: 'create' | 'reschedule' | 'cancel'
+  action?: 'create' | 'reschedule' | 'cancel' | 'generate_link'
   title?: string
   description?: string
   startTime?: string
@@ -15,6 +15,7 @@ export interface CalendarToolArguments {
   attendees?: string[]
   location?: string
   isRemote?: boolean
+  generateMeetingLink?: boolean
   meetingLink?: string
   meetingId?: string
   eventId?: string
@@ -28,14 +29,36 @@ export interface CalendarToolArguments {
   [key: string]: unknown
 }
 
-const errorMessage = (err: unknown): string => {
+function errorMessage(err: unknown): string {
   return err instanceof Error ? err.message : String(err)
 }
 
 const DEFAULT_USER_ID = 'default_user'
 
-//tool that will be used to check the connection status of the Google Calendar sub-agent tool
-export const connectionTool = async (args: CalendarToolArguments): Promise<ToolResult> => {
+const meetConferenceData = (): Record<string, unknown> => {
+  return {
+    createRequest: {
+      requestId: `meet-${Date.now()}-${Math.random().toString(36).slice(2, 10)}`,
+      conferenceSolutionKey: { type: 'hangoutsMeet' }
+    }
+  }
+}
+
+const extractMeetingLink = (event: object): string | null => {
+  const rec = event as Record<string, unknown>
+  const hangout = (rec?.hangoutLink as string) ?? null
+  if (hangout) return hangout
+  const conf = rec?.conferenceData as Record<string, unknown> | undefined
+  const entry = Array.isArray(conf?.entryPoints)
+    ? (conf.entryPoints as Record<string, unknown>[])
+    : []
+  const meet = entry.find((e) => String(e?.entryPointType ?? '') === 'video')
+  return (meet?.uri as string) ?? null
+}
+
+// google_calendar_connection — status | connect | disconnect.
+
+const connectionTool = async (args: CalendarToolArguments): Promise<ToolResult> => {
   const userId = args.userId ?? DEFAULT_USER_ID
   const operation = (args.operation as string | undefined) ?? 'status'
   try {
@@ -50,8 +73,9 @@ export const connectionTool = async (args: CalendarToolArguments): Promise<ToolR
   }
 }
 
-//calendar sub-agent tool that will be used to create, reschedule, or cancel a meeting
-export const calendarTool = async (args: CalendarToolArguments): Promise<ToolResult> => {
+//calendar — create / reschedule / cancel events on the user's connected Google Calendar.
+
+const calendarTool = async (args: CalendarToolArguments): Promise<ToolResult> => {
   const userId = args.userId ?? DEFAULT_USER_ID
   const action = args.action
   const calendarId = args.calendarId || 'primary'
@@ -77,10 +101,59 @@ export const calendarTool = async (args: CalendarToolArguments): Promise<ToolRes
         location: args.location,
         start: formatTime(args.startTime),
         end: formatTime(args.endTime),
-        attendees: args.attendees?.map((email) => ({ email }))
+        attendees: args.attendees?.map((email) => ({ email })),
+        ...(args.isRemote === true || args.generateMeetingLink === true
+          ? { conferenceData: meetConferenceData() }
+          : {})
       }
       const result = await googleCalendarService.createEvent(userId, eventData, calendarId)
-      return buildResult(args, true, result as unknown as Record<string, unknown>)
+      const meetingLink = extractMeetingLink(result)
+      return buildResult(args, true, {
+        ...(result as unknown as Record<string, unknown>),
+        ...(meetingLink ? { meetingLink } : {})
+      })
+    }
+
+    if (action === 'generate_link') {
+      const meetingId =
+        args.meetingId || args.eventId || (args.rescheduleDetails?.meetingId as string)
+
+      if (!meetingId) {
+        return buildResult(
+          args,
+          false,
+          {},
+          'meetingId/eventId is required to generate a meeting link'
+        )
+      }
+
+      const patchData = {
+        conferenceData: meetConferenceData()
+      }
+
+      const result = await googleCalendarService.patchEvent(
+        userId,
+        meetingId,
+        patchData,
+        calendarId
+      )
+      const meetingLink = extractMeetingLink(result)
+      if (!meetingLink) {
+        return buildResult(
+          args,
+          true,
+          {
+            ...(result as unknown as Record<string, unknown>),
+            eventId: meetingId
+          },
+          'Event patched but no Google Meet link was returned; the account may not have Meet enabled.'
+        )
+      }
+      return buildResult(args, true, {
+        ...(result as unknown as Record<string, unknown>),
+        eventId: meetingId,
+        meetingLink
+      })
     }
 
     if (action === 'reschedule') {
@@ -95,7 +168,11 @@ export const calendarTool = async (args: CalendarToolArguments): Promise<ToolRes
         ...(args.startTime ? { start: { dateTime: args.startTime } } : {}),
         ...(args.endTime ? { end: { dateTime: args.endTime } } : {}),
         ...(args.title ? { summary: args.title } : {}),
-        ...(args.description ? { description: args.description } : {})
+        ...(args.description ? { description: args.description } : {}),
+        ...(args.location ? { location: args.location } : {}),
+        ...(args.isRemote === true || args.generateMeetingLink === true
+          ? { conferenceData: meetConferenceData() }
+          : {})
       }
 
       const result = await googleCalendarService.patchEvent(
@@ -104,7 +181,11 @@ export const calendarTool = async (args: CalendarToolArguments): Promise<ToolRes
         patchData,
         calendarId
       )
-      return buildResult(args, true, result as unknown as Record<string, unknown>)
+      const meetingLink = extractMeetingLink(result)
+      return buildResult(args, true, {
+        ...(result as unknown as Record<string, unknown>),
+        ...(meetingLink ? { meetingLink } : {})
+      })
     }
 
     if (action === 'cancel') {
@@ -124,8 +205,8 @@ export const calendarTool = async (args: CalendarToolArguments): Promise<ToolRes
   }
 }
 
-//calendar sub-agent tool that will be used to query events or calendars
-export async function queryTool(args: CalendarToolArguments): Promise<ToolResult> {
+//google_calendar_query — list_calendars | list_events. Read-only.
+const queryTool = async (args: CalendarToolArguments): Promise<ToolResult> => {
   const userId = args.userId ?? DEFAULT_USER_ID
   const operation = (args.operation as string | undefined) ?? 'list_events'
 
@@ -146,3 +227,5 @@ export async function queryTool(args: CalendarToolArguments): Promise<ToolResult
     return buildResult(args, false, {}, errorMessage(err))
   }
 }
+
+export { connectionTool, calendarTool, queryTool }

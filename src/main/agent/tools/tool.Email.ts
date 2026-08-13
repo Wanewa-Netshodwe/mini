@@ -4,8 +4,11 @@ import { prepareAttachments } from './tool.Attachment'
 import type { AttachmentInput, PreparedAttachment } from './tool.Attachment'
 import { buildResult } from './utils/buildResult.js'
 
-const BASE_URL = process.env.SERVER_URL?.trim() || 'http://localhost:3000'
-//the arguments the planner is going to pass to the email sub-agent tool, which will be used to send an email
+const BASE_URL =
+  process.env.EMAIL_SERVER_URL?.trim() ||
+  process.env.COMMS_SERVER_URL?.trim() ||
+  'http://localhost:3000'
+
 export interface EmailToolArguments {
   taskId?: string
   step_number?: number
@@ -20,7 +23,7 @@ export interface EmailToolArguments {
   [key: string]: unknown
 }
 
-const errorMessage = (err: unknown): string => {
+function errorMessage(err: unknown): string {
   if (axios.isAxiosError(err)) {
     const data = err.response?.data as { error?: string; message?: string } | undefined
     return data?.error ?? data?.message ?? err.message
@@ -28,8 +31,19 @@ const errorMessage = (err: unknown): string => {
   return err instanceof Error ? err.message : String(err)
 }
 
-//email sub-agent tool that will be used to send an email
-export const emailSubAgent = async (args: EmailToolArguments): Promise<ToolResult> => {
+const PLACEHOLDER_RE = /\{\{\s*[^}]+\}\}/g
+
+// A leftover "{{...output.results[0].field}}" token means a template reference
+// did not resolve. Never ship that literal text to a real recipient — remove it
+// (and collapse the resulting double spaces) so the message reads cleanly.
+function stripUnresolvedPlaceholders(text: string): string {
+  return text
+    .replace(PLACEHOLDER_RE, '')
+    .replace(/\s{2,}/g, ' ')
+    .trim()
+}
+
+export async function emailSubAgent(args: EmailToolArguments): Promise<ToolResult> {
   const recipient = (args.recipient ?? args.to)?.trim()
   const subject = args.subject?.trim()
   const body = args.body
@@ -37,6 +51,20 @@ export const emailSubAgent = async (args: EmailToolArguments): Promise<ToolResul
   if (!recipient) return buildResult(args, false, {}, 'recipient (email address) is required')
   if (!subject) return buildResult(args, false, {}, 'subject is required')
   if (!body) return buildResult(args, false, {}, 'body is required')
+
+  // Never send to — or with content containing — an unresolved template reference.
+  // A recipient that is still a "{{...}}" token means a lookup failed upstream.
+  if (PLACEHOLDER_RE.test(recipient)) {
+    return buildResult(
+      args,
+      false,
+      {},
+      'recipient still contains an unresolved template placeholder ({{...}}). Re-run the lookup step so a real email address is supplied.'
+    )
+  }
+
+  const safeSubject = stripUnresolvedPlaceholders(subject)
+  const safeBody = stripUnresolvedPlaceholders(body)
 
   let attachments: PreparedAttachment[] = []
   if (args.attachments) {
@@ -53,8 +81,8 @@ export const emailSubAgent = async (args: EmailToolArguments): Promise<ToolResul
       url: `${BASE_URL}/email/send`,
       data: {
         to: recipient,
-        subject,
-        body,
+        subject: safeSubject,
+        body: safeBody,
         ...(typeof args.isHtml === 'boolean' ? { isHtml: args.isHtml } : {}),
         ...(attachments.length > 0 ? { attachments } : {})
       },
