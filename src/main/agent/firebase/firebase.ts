@@ -6,7 +6,7 @@ import dotenv from 'dotenv'
 dotenv.config()
 
 const serverDir =
-  typeof __dirname !== 'undefined' ? __dirname : join(fileURLToPath(import.meta.url), '..')
+  typeof __dirname !== 'undefined' ? __dirname : join(fileURLToPath(import.meta.url))
 
 const keyFilename = process.env.GOOGLE_KEY_FILENAME || join(serverDir, 'serviceAccount.json')
 

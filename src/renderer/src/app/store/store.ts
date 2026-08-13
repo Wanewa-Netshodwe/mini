@@ -1,7 +1,9 @@
 import { configureStore } from '@reduxjs/toolkit'
-
+import tabReducer from './tabSlice/slice.tab.js'
 export const store = configureStore({
-  reducer: {}
+  reducer: {
+    tab: tabReducer
+  }
 })
 export type RootState = ReturnType<typeof store.getState>
 export type AppDispatch = typeof store.dispatch

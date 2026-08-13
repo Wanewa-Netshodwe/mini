@@ -1,10 +1,57 @@
-@import "tailwindcss";
-@theme{
+@import 'tailwindcss';
+@import 'react-big-calendar/lib/css/react-big-calendar.css';
+@import 'react-big-calendar/lib/addons/dragAndDrop/styles.css';
+@theme {
   --color-primary: #2a2c01;
-  --color-text: #bfbdb8;
-  --color-secondary: #1c1d04
-  --color-tertiary: #323300;
+  --color-secondary: #bfbdb8;
 }
+
+.rbc-timeslot-group {
+  min-height: 180px !important;
+  height: 180px !important;
+  width: 100px !important;
+}
+
+.rbc-timeslot-group .rbc-time-slot {
+  height: 180px !important;
+  min-height: 180px !important;
+  flex: none !important;
+  width: 100px !important;
+}
+.rbc-time-header-content .rbc-header {
+  width: 100px !important;
+  flex: none !important;
+}
+.rbc-day-slot .rbc-events-container {
+  margin: 0 !important;
+}
+.rbc-allday-cell .rbc-day-bg {
+  width: 99.5px !important;
+  flex: none !important;
+}
+.rbc-off-range-bg {
+  background-color: #40421c !important;
+}
+
+.rbc-calendar,
+.rbc-month-view,
+.rbc-time-view,
+.rbc-day-bg,
+.rbc-month-row,
+.rbc-header,
+.rbc-time-header,
+.rbc-time-content,
+.rbc-timeslot-group,
+.rbc-time-slot {
+  border: none !important;
+}
+.rbc-time-content > * + * > * {
+  border: none !important;
+}
+.rbc-time-content {
+  overflow-x: hidden !important;
+}
+
 @font-face {
   font-family: 'Poppins';
   src: url('./fonts/Poppins-Regular.ttf') format('truetype');
@@ -42,12 +89,46 @@
   font-style: italic;
 }
 
-
-*{
+* {
   margin: 0;
   padding: 0;
   box-sizing: border-box;
-  font-family: 'Poppins', sans-serif;
+}
+html {
+  font-family: Poppins, sans-serif;
+}
+.titlebar {
+  color: white;
+  display: flex;
+  justify-content: space-between;
+  app-region: drag;
+  margin-left: env(titlebar-area-x, 0);
+  width: env(titlebar-area-width, 100%);
+  height: env(titlebar-area-height, 40px);
+  box-sizing: border-box;
+}
+.window-controls {
+  -webkit-app-region: no-drag;
+}
+.scroll-box::-webkit-scrollbar {
+  width: 8px;
 }
 
+.scroll-box::-webkit-scrollbar-track {
+  background: transparent;
+}
 
+.scroll-box::-webkit-scrollbar-thumb {
+  background: #888;
+  border-radius: 10px;
+}
+
+.scroll-box::-webkit-scrollbar-thumb:hover {
+  background: #555;
+}
+
+/* Firefox */
+.scroll-box {
+  scrollbar-width: thin;
+  scrollbar-color: #888 transparent;
+}
