@@ -1,0 +1,28 @@
+{
+  "session_id": "S-1786660558732",
+  "title": "This are a heartbeat test are ",
+  "main_goal": "This are a heartbeat test are you there?\n",
+  "status": "completed",
+  "current_task": {
+    "task_id": "T-1786660558732",
+    "goal": "Conversational Chat",
+    "status": "pending",
+    "failure_count": 0,
+    "max_retries": 3,
+    "steps": [],
+    "current_step": 0
+  },
+  "task_history": [],
+  "is_followup": false,
+  "conversation_log": [
+    {
+      "turn": 1,
+      "user_prompt": "This are a heartbeat test are you there?\n",
+      "ai_response": "Yes, I’m here! What can I help you with?",
+      "timestamp": "2026-08-13T22:35:58.732Z"
+    }
+  ],
+  "main_goal_completed": true,
+  "pending_reply": null,
+  "outputs": {}
+}
