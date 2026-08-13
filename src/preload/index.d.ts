@@ -5,6 +5,11 @@ declare global {
     electron: ElectronAPI
     api: unknown
     systemNotification: (title: string, body: string) => Promise<{ success: boolean }>
+    platformQuery: {
+      query: (args: Record<string, unknown>) => Promise<any>
+      getJobLink: (jobId: string) => Promise<any>
+      copyJobLink: (jobId: string) => Promise<any>
+    }
     socket: {
       connect: (userId: string) => void
       sendMessage: (event: string, data: any) => void

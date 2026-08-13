@@ -1,4 +1,4 @@
-import { app, shell, BrowserWindow, ipcMain } from 'electron'
+import { app, shell, BrowserWindow, ipcMain, clipboard } from 'electron'
 import { join } from 'path'
 import { electronApp, optimizer, is } from '@electron-toolkit/utils'
 import icon from '../../resources/icon.png?asset'
@@ -13,7 +13,8 @@ import {
 } from './agent/utils/agent.utils'
 import {
   PlatformToolArguments,
-  recruitmentPlatformSubAgent
+  recruitmentPlatformSubAgent,
+  getJobApplyUrl
 } from './agent/tools/tool.RecruitmentPlatform'
 import { CalendarAuthInstance } from './agent/auth/calendarAuth'
 import { googleCalendarService } from './agent/services/googleCalendarService'
@@ -198,7 +199,33 @@ ipcMain.handle('platform:query', async (_event, args: PlatformToolArguments) => 
   }
 })
 
-//calendar IPC handlers
+// Fetch a job's public application link (no clipboard side effects).
+ipcMain.handle('platform:getJobLink', async (_event, jobId: string) => {
+  try {
+    return await getJobApplyUrl(String(jobId ?? ''))
+  } catch (err) {
+    const msg = err instanceof Error ? err.message : String(err)
+    console.error('[IPC platform:getJobLink] Error:', msg)
+    return { success: false, error: msg }
+  }
+})
+
+// Fetch a job's application link AND copy it to the system clipboard.
+ipcMain.handle('platform:copyJobLink', async (_event, jobId: string) => {
+  try {
+    const res = await getJobApplyUrl(String(jobId ?? ''))
+    if (res.success && res.applyUrl) {
+      clipboard.writeText(res.applyUrl)
+      return { ...res, copied: true }
+    }
+    return { ...res, copied: false }
+  } catch (err) {
+    const msg = err instanceof Error ? err.message : String(err)
+    console.error('[IPC platform:copyJobLink] Error:', msg)
+    return { success: false, copied: false, error: msg }
+  }
+})
+
 ipcMain.handle('calendar:connect', async (event, { userId }: { userId: string }) => {
   return new Promise((resolve) => {
     try {

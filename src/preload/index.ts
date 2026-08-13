@@ -68,7 +68,9 @@ if (process.contextIsolated) {
         ipcRenderer.invoke('agent:getOrCreateUserId', agentEmail)
     })
     contextBridge.exposeInMainWorld('platformQuery', {
-      query: (args: Record<string, unknown>) => ipcRenderer.invoke('platform:query', args)
+      query: (args: Record<string, unknown>) => ipcRenderer.invoke('platform:query', args),
+      getJobLink: (jobId: string) => ipcRenderer.invoke('platform:getJobLink', jobId),
+      copyJobLink: (jobId: string) => ipcRenderer.invoke('platform:copyJobLink', jobId)
     })
     contextBridge.exposeInMainWorld('calendarAuth', {
       connect: (userId: string) => ipcRenderer.invoke('calendar:connect', { userId }),
